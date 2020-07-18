@@ -7,19 +7,19 @@ I have a copy of the addresses from the SecureDrop [directory](https://securedro
 to test.
 
 
-## System requirement
+## System requirements
 
 The tool assumes that Tor is running with a SOCKS proxy at port 9050 in the system.
 
-The dependencies are managed using [dep](https://golang.github.io/dep/) tool.
+### Development
 
+The dependencies are managed using [Go Modules][gomod] (your Go version must support them).
 
-## How to build?
+  [gomod]: https://blog.golang.org/using-go-modules
 
-Checkout the git repo in your `$GOPATH`, and then simple `go build` will do the work
-for you.
+### How to build?
 
-
+Clone the repo and run `make build`.
 
 ## Output format
 
@@ -53,6 +53,6 @@ instances could not be reached (maybe they down).
 
 Remember that the CSV formatted output will be printed on the STDOUT as the network calls return the results, in an asynchronous manner.
 For the JSON output format, the tool waits for all of the network calls to return the results, and then prints them on the STDOUT at
-the end. 
+the end.
 
 License: GPLv3+
