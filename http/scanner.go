@@ -33,8 +33,8 @@ func (s *Scanner) Scan(format string, onionURLs []string) error {
 			go func() {
 				instance := securedrop.NewInstance(url)
 
-				s := securedrop.NewStatusChecker(s.client)
-				err := s.Check(instance)
+				sc := securedrop.NewStatusChecker(s.client)
+				err := sc.Check(instance)
 				if err == nil {
 					instance.Available = true
 				}
