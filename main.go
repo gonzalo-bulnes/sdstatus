@@ -10,13 +10,8 @@ import (
 
 	"github.com/freedomofpress/sdstatus/securedrop"
 	"github.com/freedomofpress/sdstatus/status"
+	"github.com/freedomofpress/sdstatus/tor"
 	"github.com/urfave/cli"
-	"golang.org/x/net/proxy"
-)
-
-const (
-	// proxyAddr points to local SOCKS proxy from Tor
-	proxyAddr = "127.0.0.1:9050"
 )
 
 func check(e error) {
@@ -41,21 +36,10 @@ func checkStatus(ch chan status.Information, client *http.Client, url string) {
 	ch <- instance
 }
 
-func runScan(format string, onion_urls []string) {
+func runScan(c *http.Client, format string, onion_urls []string) {
 	i := 0
 
 	results := make([]*securedrop.Instance, 0)
-	// create a SOCKS5 dialer
-	dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "can't connect to the proxy:", err)
-		os.Exit(1)
-	}
-	// setup the http client
-	httpTransport := &http.Transport{}
-	c := &http.Client{Transport: httpTransport}
-	// Add the dialer
-	httpTransport.Dial = dialer.Dial
 
 	ch := make(chan status.Information)
 
@@ -114,12 +98,19 @@ func createApp() *cli.App {
 			Destination: &format,
 		},
 	}
-	app.Action = func(c *cli.Context) error {
-		onion_urls := c.Args()
+	app.Action = func(ctx *cli.Context) error {
+		onion_urls := ctx.Args()
 		if len(onion_urls) == 0 {
 			log.Fatal("No args provided.")
 		}
-		runScan(format, onion_urls)
+
+		c, err := tor.NewClient()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Cannot connect to the Tor proxy: %v\n", err)
+			os.Exit(1)
+		}
+
+		runScan(c, format, onion_urls)
 		return nil
 	}
 
