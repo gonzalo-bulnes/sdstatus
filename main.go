@@ -31,21 +31,20 @@ func check(e error) {
 }
 
 func checkStatus(ch chan Information, client *http.Client, url string) {
-	result := securedrop.NewInstance(url)
+	instance := securedrop.NewInstance(url)
 
-	metadataURL := fmt.Sprintf("http://%s/metadata", url)
 	// Create the request
-	req, err := http.NewRequest("GET", metadataURL, nil)
+	req, err := instance.NewMetadataRequest()
 	if err != nil {
-		result.Available = false
-		ch <- result
+		instance.Available = false
+		ch <- instance
 		return
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		result.Available = false
-		ch <- result
+		instance.Available = false
+		ch <- instance
 		return
 	}
 
@@ -53,17 +52,17 @@ func checkStatus(ch chan Information, client *http.Client, url string) {
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		result.Available = false
-		ch <- result
+		instance.Available = false
+		ch <- instance
 		return
 	}
 
 	var info securedrop.Metadata
 	json.Unmarshal(body, &info)
 
-	result.Info = info
-	result.Available = true
-	ch <- result
+	instance.Info = info
+	instance.Available = true
+	ch <- instance
 }
 
 func runScan(format string, onion_urls []string) {

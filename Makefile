@@ -6,7 +6,7 @@ build: ## Compiles Golang binary.
 
 .PHONY: test
 test: ## Runs the test suite.
-	go test ./...
+	go test -cover ./...
 
 .PHONY: help
 help: ## Prints this message and exits.

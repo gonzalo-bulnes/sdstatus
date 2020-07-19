@@ -18,3 +18,29 @@ func TestInstance(t *testing.T) {
 		}
 	})
 }
+
+func TestInstanceNewMetadataRequest(t *testing.T) {
+	t.Run("returns an http.Request to get instance metadata", func(t *testing.T) {
+		i := Instance{
+			URL: "zdf4nikyuswdzbt6.onion",
+		}
+		expected := struct {
+			method string
+			url    string
+		}{
+			method: "GET",
+			url:    "http://zdf4nikyuswdzbt6.onion/metadata",
+		}
+
+		r, err := i.NewMetadataRequest()
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if method := r.Method; method != expected.method {
+			t.Errorf("Expected %s method, got %s", expected.method, method)
+		}
+		if url := r.URL.String(); url != expected.url {
+			t.Errorf("Expected %s URL, got %s", expected.url, url)
+		}
+	})
+}
