@@ -6,20 +6,9 @@ import (
 	"os"
 
 	_http "github.com/freedomofpress/sdstatus/http"
-	"github.com/freedomofpress/sdstatus/status"
 	"github.com/freedomofpress/sdstatus/tor"
 	"github.com/urfave/cli"
 )
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
-func checkStatusWithStatusChecker(checker status.Checker) error {
-	return nil
-}
 
 func createApp() *cli.App {
 	app := cli.NewApp()
@@ -60,6 +49,6 @@ func createApp() *cli.App {
 func main() {
 	app := createApp()
 	if err := app.Run(os.Args); err != nil {
-		check(err)
+		panic(err)
 	}
 }
