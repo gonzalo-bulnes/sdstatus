@@ -41,7 +41,7 @@ func runScan(c *http.Client, format string, onion_urls []string) {
 
 				s := securedrop.NewStatusChecker(c)
 				err := s.Check(instance)
-				if err != nil {
+				if err == nil {
 					instance.Available = true
 				}
 				fmt.Printf("%v\n", instance)
