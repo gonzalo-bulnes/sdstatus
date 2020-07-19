@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/freedomofpress/sdstatus/securedrop"
 	"github.com/urfave/cli"
 	"golang.org/x/net/proxy"
 )
@@ -18,27 +19,9 @@ const (
 	proxyAddr = "127.0.0.1:9050"
 )
 
-// Information is used in channels
+// Information represents data that can be serialized as CSV
 type Information interface {
-	msg() string
-}
-
-// SDMetadata stores JSON metadata from SD instances
-type SDMetadata struct {
-	Version     string `json:"sd_version"`
-	Fingerprint string `json:"gpg_fpr"`
-}
-
-// SDInfo stores metadata and Onion URL
-type SDInfo struct {
-	Info      SDMetadata
-	Url       string
-	Available bool
-}
-
-func (sd SDInfo) msg() string {
-	msgstr := fmt.Sprintf("%s,%s,%s", sd.Url, sd.Info.Version, sd.Info.Fingerprint)
-	return msgstr
+	CSV() string
 }
 
 func check(e error) {
@@ -48,8 +31,7 @@ func check(e error) {
 }
 
 func checkStatus(ch chan Information, client *http.Client, url string) {
-	var result SDInfo
-	result.Url = url
+	result := securedrop.NewInstance(url)
 
 	metadataURL := fmt.Sprintf("http://%s/metadata", url)
 	// Create the request
@@ -76,7 +58,7 @@ func checkStatus(ch chan Information, client *http.Client, url string) {
 		return
 	}
 
-	var info SDMetadata
+	var info securedrop.Metadata
 	json.Unmarshal(body, &info)
 
 	result.Info = info
@@ -87,7 +69,7 @@ func checkStatus(ch chan Information, client *http.Client, url string) {
 func runScan(format string, onion_urls []string) {
 	i := 0
 
-	results := make([]SDInfo, 0)
+	results := make([]securedrop.Instance, 0)
 	// create a SOCKS5 dialer
 	dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
 	if err != nil {
@@ -119,10 +101,10 @@ func runScan(format string, onion_urls []string) {
 		if result != nil {
 
 			if format == "csv" {
-				fmt.Println(result.msg())
+				fmt.Println(result.CSV())
 			}
 
-			results = append(results, result.(SDInfo))
+			results = append(results, result.(securedrop.Instance))
 			i = i - 1
 		}
 		if i == 0 {
@@ -150,9 +132,9 @@ func createApp() *cli.App {
 	app.Usage = "To scan SecureDrop instances"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "format",
-			Usage: "Output scan results in `FORMAT`",
-			Value: "json",
+			Name:        "format",
+			Usage:       "Output scan results in `FORMAT`",
+			Value:       "json",
 			Destination: &format,
 		},
 	}

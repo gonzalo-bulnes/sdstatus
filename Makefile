@@ -1,14 +1,12 @@
 .DEFAULT_GOAL := help
 
 .PHONY: build
-build: ## Compiles Golang binary
+build: ## Compiles Golang binary.
 	go build
 
 .PHONY: test
-test: ## Queries a random Onion URL from the hardcoded list
-	sort --random-sort sdonion.txt \
-		| head -n 1 \
-		| xargs go run main.go
+test: ## Runs the test suite.
+	go test ./...
 
 .PHONY: help
 help: ## Prints this message and exits.
