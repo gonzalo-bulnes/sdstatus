@@ -1,14 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"strings"
 
-	"github.com/freedomofpress/sdstatus/securedrop"
+	_http "github.com/freedomofpress/sdstatus/http"
 	"github.com/freedomofpress/sdstatus/status"
 	"github.com/freedomofpress/sdstatus/tor"
 	"github.com/urfave/cli"
@@ -22,63 +19,6 @@ func check(e error) {
 
 func checkStatusWithStatusChecker(checker status.Checker) error {
 	return nil
-}
-
-func runScan(c *http.Client, format string, onion_urls []string) {
-	i := 0
-
-	results := make([]*securedrop.Instance, 0)
-
-	ch := make(chan status.Information)
-
-	// For each address we are creating a goroutine
-	for _, v := range onion_urls {
-		url := strings.TrimSpace(v)
-
-		if url != "" {
-			go func() {
-				instance := securedrop.NewInstance(url)
-
-				s := securedrop.NewStatusChecker(c)
-				err := s.Check(instance)
-				if err == nil {
-					instance.Available = true
-				}
-				fmt.Printf("%v\n", instance)
-				ch <- instance
-			}()
-			i = i + 1
-		}
-
-	}
-
-	// Now wait for all the results
-	for {
-		result := <-ch
-
-		if result != nil {
-
-			if format == "csv" {
-				fmt.Println(result.CSV())
-			}
-
-			results = append(results, result.(*securedrop.Instance))
-			i = i - 1
-		}
-		if i == 0 {
-			break
-		}
-	}
-
-	if format == "json" {
-		bits, err := json.MarshalIndent(results, "", "\t")
-		if err == nil {
-			fmt.Println(string(bits))
-		}
-	} else if format == "csv" {
-	} else {
-		log.Fatal(fmt.Sprintf("Invalid format: %s", format))
-	}
 }
 
 func createApp() *cli.App {
@@ -97,18 +37,20 @@ func createApp() *cli.App {
 		},
 	}
 	app.Action = func(ctx *cli.Context) error {
-		onion_urls := ctx.Args()
-		if len(onion_urls) == 0 {
-			log.Fatal("No args provided.")
+		onionURLs := ctx.Args()
+		if len(onionURLs) == 0 {
+			log.Fatal("Please provide at least one onion URL.")
 		}
 
-		c, err := tor.NewClient()
+		client, err := tor.NewClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Cannot connect to the Tor proxy: %v\n", err)
 			os.Exit(1)
 		}
 
-		runScan(c, format, onion_urls)
+		s := _http.NewScanner(client)
+		s.Scan(format, onionURLs)
+
 		return nil
 	}
 
