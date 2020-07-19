@@ -1,9 +1,11 @@
 package securedrop
 
-import "testing"
+import (
+	"testing"
+)
 
-func TestInstance(t *testing.T) {
-	t.Run("implements the Information interface", func(t *testing.T) {
+func TestInstanceCSV(t *testing.T) {
+	t.Run("known values", func(t *testing.T) {
 		i := Instance{
 			Info: Metadata{
 				Fingerprint: "F6E0E2901B787C3721E1C0BF4BD6284B525A3DF4",

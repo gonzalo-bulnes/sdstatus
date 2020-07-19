@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/freedomofpress/sdstatus/securedrop"
+	"github.com/freedomofpress/sdstatus/status"
 	"github.com/urfave/cli"
 	"golang.org/x/net/proxy"
 )
@@ -19,56 +19,32 @@ const (
 	proxyAddr = "127.0.0.1:9050"
 )
 
-// Information represents data that can be serialized as CSV
-type Information interface {
-	CSV() string
-}
-
 func check(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
 
-func checkStatus(ch chan Information, client *http.Client, url string) {
+func checkStatusWithStatusChecker(checker status.Checker) error {
+	return nil
+}
+
+func checkStatus(ch chan status.Information, client *http.Client, url string) {
 	instance := securedrop.NewInstance(url)
 
-	// Create the request
-	req, err := instance.NewMetadataRequest()
+	s := securedrop.NewStatusChecker(client)
+	err := s.Check(instance)
 	if err != nil {
-		instance.Available = false
-		ch <- instance
-		return
+		instance.Available = true
 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		instance.Available = false
-		ch <- instance
-		return
-	}
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		instance.Available = false
-		ch <- instance
-		return
-	}
-
-	var info securedrop.Metadata
-	json.Unmarshal(body, &info)
-
-	instance.Info = info
-	instance.Available = true
 	ch <- instance
 }
 
 func runScan(format string, onion_urls []string) {
 	i := 0
 
-	results := make([]securedrop.Instance, 0)
+	results := make([]*securedrop.Instance, 0)
 	// create a SOCKS5 dialer
 	dialer, err := proxy.SOCKS5("tcp", proxyAddr, nil, proxy.Direct)
 	if err != nil {
@@ -81,7 +57,7 @@ func runScan(format string, onion_urls []string) {
 	// Add the dialer
 	httpTransport.Dial = dialer.Dial
 
-	ch := make(chan Information)
+	ch := make(chan status.Information)
 
 	// For each address we are creating a goroutine
 	for _, v := range onion_urls {
@@ -97,13 +73,14 @@ func runScan(format string, onion_urls []string) {
 	// Now wait for all the results
 	for {
 		result := <-ch
+
 		if result != nil {
 
 			if format == "csv" {
 				fmt.Println(result.CSV())
 			}
 
-			results = append(results, result.(securedrop.Instance))
+			results = append(results, result.(*securedrop.Instance))
 			i = i - 1
 		}
 		if i == 0 {
