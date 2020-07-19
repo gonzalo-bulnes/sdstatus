@@ -24,18 +24,6 @@ func checkStatusWithStatusChecker(checker status.Checker) error {
 	return nil
 }
 
-func checkStatus(ch chan status.Information, client *http.Client, url string) {
-	instance := securedrop.NewInstance(url)
-
-	s := securedrop.NewStatusChecker(client)
-	err := s.Check(instance)
-	if err != nil {
-		instance.Available = true
-	}
-
-	ch <- instance
-}
-
 func runScan(c *http.Client, format string, onion_urls []string) {
 	i := 0
 
@@ -48,7 +36,17 @@ func runScan(c *http.Client, format string, onion_urls []string) {
 		url := strings.TrimSpace(v)
 
 		if url != "" {
-			go checkStatus(ch, c, v)
+			go func() {
+				instance := securedrop.NewInstance(url)
+
+				s := securedrop.NewStatusChecker(c)
+				err := s.Check(instance)
+				if err != nil {
+					instance.Available = true
+				}
+				fmt.Printf("%v\n", instance)
+				ch <- instance
+			}()
 			i = i + 1
 		}
 
