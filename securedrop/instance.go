@@ -17,7 +17,7 @@ type Metadata struct {
 type Instance struct {
 	Available bool
 	Info      Metadata
-	URL       string
+	URL       string `json:"Url"`
 }
 
 // CSV implements the sdstatus.Information interface.
